@@ -36,6 +36,7 @@ struct db_filter {
 };
 
 #define DB_FILTER_LENGTH sizeof(struct db_filter)
+#define DB_PACKET_INFO_LENGTH sizeof(struct db_packet_info )
 #define db_filter_is_same(n1, n2) ((n1)->source == (n2)->source)
 
 

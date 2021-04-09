@@ -87,7 +87,7 @@ struct nf_hook_ops out_hook;
                 kfree(new);
                 // break;
             }
-            printk("source: %d:%d to dest:%d:%d\n", ip->saddr, tcp->source, ip->daddr, tcp->dest);
+            printk("source: %u:%u to dest:%u:%u\n", ip->saddr, tcp->source, ip->daddr, tcp->dest);
             break;
         }
     }
@@ -139,6 +139,27 @@ struct nf_hook_ops out_hook;
 
 }
 
+static void db_filter_list_clear(void)
+{
+  struct list_head *ptr, *next;
+  struct db_list_s *tmp;
+  list_for_each_safe(ptr, next, &db_hook_dev.db_filters)
+  {
+    tmp = list_entry(ptr, struct db_list_s, list);
+    list_del(ptr);
+    kfree(tmp);
+  }
+  db_hook_dev.db_filter_num = 0;
+}
+
+static void db_packet_info_clear(void)
+{
+    struct db_packet_info* pack_info;
+    while (kfifo_get(&db_kfifo, &pack_info)) {
+        kfree(pack_info);
+    }
+}
+
 static int db_dev_open(struct inode *inodep, struct file *filep)
 {
     if(db_hook_dev.opened) {
@@ -160,28 +181,34 @@ static int db_dev_open(struct inode *inodep, struct file *filep)
  */
 static ssize_t db_dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
-    int error_count = 0, size = DB_FILTER_LENGTH;
+    int error_count = 0;
+    int num = len/DB_PACKET_INFO_LENGTH;
+    int packet_count = 0;
     struct db_packet_info* p_info;
     // printk(KERN_INFO "[DB] db_dev_read  KFIFO LEN: %u\n",kfifo_len(&db_kfifo));
-
-    if(kfifo_get(&db_kfifo, &p_info)) {
-        error_count = copy_to_user(buffer, p_info, size);
-        if (error_count)
-        {
-          // mutex_unlock(&nhm_mutex);
-            printk(KERN_ALERT "[NHM] The copy to user failed: %d\n", error_count);
-            return -EFAULT;
+    while(num--) {
+        if(kfifo_get(&db_kfifo, &p_info)) {
+            // printk("source: %u:%u to dest:%u:%u\n", p_info->saddr, p_info->sport, p_info->daddr, p_info->dport);
+            error_count = copy_to_user(buffer, p_info, DB_PACKET_INFO_LENGTH);
+            if (error_count) {
+                printk(KERN_ALERT "[DB] The copy to user failed: %d\n", error_count);
+                return -EFAULT;
+            }
+            packet_count++;
+            buffer += DB_PACKET_INFO_LENGTH;
+        } else {
+            return packet_count;
         }
-        return size;
-    } else {
-
-        return 0;
     }
+    return packet_count;
+
 }
 
 static int db_dev_release(struct inode *inodep, struct file *filep)
 {
   // number_opens--;
+  db_filter_list_clear();
+  db_packet_info_clear();
   db_hook_dev.opened = false;
   return 0;
 }
@@ -295,29 +322,6 @@ void db_hook_start(void) {
     nf_register_net_hook(&init_net, &out_hook); 
 #endif
 }
-
-static void db_filter_list_clear(void)
-{
-  struct list_head *ptr, *next;
-  struct db_list_s *tmp;
-  list_for_each_safe(ptr, next, &db_hook_dev.db_filters)
-  {
-    tmp = list_entry(ptr, struct db_list_s, list);
-    list_del(ptr);
-    kfree(tmp);
-  }
-  db_hook_dev.db_filter_num = 0;
-}
-
-static void db_packet_info_clear(void)
-{
-    struct db_packet_info* pack_info;
-    while (kfifo_get(&db_kfifo, &pack_info)) {
-        kfree(pack_info);
-    }
-}
-
-
 
 static int __init db_hook_init(void)
 {

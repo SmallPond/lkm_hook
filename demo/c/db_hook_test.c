@@ -29,20 +29,21 @@ int main(int argc, char** argv)
         return errno;
     }
     printf("Connection established between the application and the device\n");
-
-    printf("fd is %d\n", fd);
-    /* drop all packet from/to 192.168.0.1 and port 80 */
-    inet_pton(AF_INET, "192.168.50.152", &(filter.source));
+  
+    inet_pton(AF_INET, "159.75.7.136", &(filter.source));
     inet_ntop(AF_INET, (void *)&(filter.source), (char *)&saddr[0], 16);
     printf("source b %u, str %s\n", filter.source, saddr);
     /* add the filter */
     ret = ioctl(fd, DB_IOCTL_ADD, &filter);
     printf("Result: %d-%d %s\n", ret, errno, strerror(errno));
 
-    while (!read(fd, &p_info, DB_FILTER_LENGTH));
-
+    while (!read(fd, &p_info, DB_PACKET_INFO_LENGTH));
+    printf("recv a packet from ip-port:%u,%u to %u,%u\n",p_info.saddr, p_info.sport, p_info.daddr, p_info.dport);
+    // uint32_t saddr_n = htonl(p_info.saddr);
+    // uint32_t daddr_n = htonl(p_info.daddr);
     inet_ntop(AF_INET, (void *)&(p_info.saddr), (char *)&saddr[0], 16);
-    printf("recv a packet from ip-port:%s %d\n",saddr, p_info.sport);
+    inet_ntop(AF_INET, (void *)&(p_info.daddr), (char *)&daddr[0], 16);
+    printf("recv a packet from ip-port:%s,%d to %s,%d\n",saddr, p_info.sport, daddr, p_info.dport);
     sleep(1);
     close(fd);
 
