@@ -7,10 +7,23 @@
 #include <errno.h>     // errno
 #include <string.h>    // strerror()
 #include <sys/ioctl.h>  // ioctl();
-
+#include <stdlib.h> 
 #include "db_hook_api.h"
 // int fd = -1;
+struct db_packet_info db_p_info[100];
 
+// int new_packet_info(int num)
+// {
+//     db_p_info = (struct db_packet_info *)malloc(num * DB_PACKET_INFO_LENGTH);
+//     if (!db_p_info) {
+//         printf("OOM!\n");
+//     }
+// }
+
+// int del_packet_info(int num)
+// {
+//     free(db_p_info);
+// }
 int db_hook_open(void)                 
 {
     int fd = -1;
@@ -39,10 +52,12 @@ int db_hook_register_filter(int fd, char *ip_str)
 
 }
 
-int db_get_packet(int fd, struct db_packet_info* p_info) 
+int db_get_packet(int fd, int num) 
 {   
     // struct db_packet_info p_info;
-    return read(fd, p_info, DB_PACKET_INFO_LENGTH);
+    // new_packet_info(num);
+    int size = num * DB_PACKET_INFO_LENGTH;
+    return read(fd, db_p_info, size);
 }
 
 void db_hook_close(int fd) 

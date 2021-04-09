@@ -12,6 +12,7 @@ typedef struct db_packet_info {
     __be32 saddr;
     __be32 daddr;
 }db_packet_info;
+
 typedef struct db_filter {
     __be16 source;
 }db_filter;
@@ -28,10 +29,10 @@ typedef struct db_filter {
 // magic number / nr / size
 #define DB_IOCTL_ADD    _IOW(DB_MAJOR_NUMBER, 0, struct db_filter *)
 #define DB_IOCTL_DEL    _IOW(DB_MAJOR_NUMBER, 1, struct db_filter *)
-
+extern struct db_packet_info db_p_info[100];
 // api
 int db_hook_open(void);
-int db_get_packet(int fd, struct db_packet_info* p_info);
+int db_get_packet(int fd, int num) ;
 int db_hook_register_filter(int fd, char *ip_str);
 void db_hook_close(int fd);
 

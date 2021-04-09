@@ -5,6 +5,7 @@ package main
 import "C"
 import "fmt"
 import "net"
+//import "unsafe"
 
 // 二进制 ip 转字符串
 func ip_to_string(intIP uint32) string {
@@ -59,20 +60,25 @@ func registerFilter(fd int, filter []string) int {
 // @title    getPacket
 // @description  获取符合过滤规则的包（源IP相同）
 // @param     fd 文件描述符
-// @param     p_info 指针， 返回 packet 相关数据
+// @param     p_info 指针，返回 packet 相关数据
+// @param     num 获取 num 个数据包
 // @return    获取到的包数量
-func getPacket(fd int, p_info * packet_info) int {
-
-	var ret int;
-	var db_p_info C.db_packet_info;
-	ret = int(C.db_get_packet(C.int(fd), &db_p_info));
-	if ret != 0 {
-		p_info.saddr = uint32(db_p_info.saddr);
-		p_info.daddr = uint32(db_p_info.daddr);
-		p_info.dport = uint16(db_p_info.dport);
-		p_info.sport = uint16(db_p_info.sport);
-		p_info.protocol = uint8(db_p_info.protocol);
+func getPacket(fd int, pks_info []packet_info, num int) int{
+	// var pks_info [num]packet_info;
+	var ret,i int;
+	if num > 100 {
+		num = 100;
 	}
+	// var db_p_info [100]C.db_packet_info;
+	ret = int(C.db_get_packet(C.int(fd), C.int(num)));
+	for i=0; i < ret; i++ {
+		pks_info[i].saddr = uint32(C.db_p_info[i].saddr);
+		pks_info[i].daddr = uint32(C.db_p_info[i].daddr);
+		pks_info[i].dport = uint16(C.db_p_info[i].dport);
+		pks_info[i].sport = uint16(C.db_p_info[i].sport);
+		pks_info[i].protocol = uint8(C.db_p_info[i].protocol);
+	}
+	
 
 	return ret;
 }
