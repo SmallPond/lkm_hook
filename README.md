@@ -10,7 +10,16 @@ Golang编写 App ，C 写 LKM
 - ubuntu18.04 Linux-5.4.0-70-generic
 - gcc version 7.5.0
 - golang 1.14
-  
+
+# 项目结构
+
+- api: 供 golang 调用的C API
+- demo
+  - c: C demo
+  - go: go App
+- module : lkm
+
+
 # How to run
 
 1. 获取源代码

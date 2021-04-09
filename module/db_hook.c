@@ -37,17 +37,10 @@ struct db_hook_dev {
     struct device*   db_device; 
     struct list_head db_filters; 
     unsigned int     db_filter_num;
-    struct kfifo*    db_kfifo;          // packet info ring buffer
-
 };
 struct db_hook_dev db_hook_dev;
 
 DECLARE_KFIFO(db_kfifo, struct db_packet_info*, DB_KFIFO_BUFFER_SIZE);
-// char *db_kfifo_buffer[DB_KFIFO_BUFFER_SIZE];
-// void ipv4_to_s(unsigned int ipv4, char *str)  
-// {  
-//         sprintf(str, "%pI4", &ipv4);  
-// }
 
 struct nf_hook_ops in_hook;  
 struct nf_hook_ops out_hook;
@@ -85,7 +78,6 @@ struct nf_hook_ops out_hook;
             new->protocol = ip->protocol;
             if(!kfifo_put(&db_kfifo, new)) {
                 kfree(new);
-                // break;
             }
             printk("source: %u:%u to dest:%u:%u\n", ip->saddr, tcp->source, ip->daddr, tcp->dest);
             break;
@@ -109,7 +101,6 @@ struct nf_hook_ops out_hook;
     struct list_head *ptr, *next;
     struct db_list_s *tmp;
     struct db_packet_info *new ;
-    // char source[4];
     
     // __be32 saddr_aton;
     tcp = tcp_hdr(skb);
@@ -171,14 +162,6 @@ static int db_dev_open(struct inode *inodep, struct file *filep)
     return 0;
 }
 
-/**
- * @brief Read function.
- * @param filep struct file *
- * @param buffer char *
- * @param len size_t
- * @param offset loff_t *
- * @return The read length, else the error code.
- */
 static ssize_t db_dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
     int error_count = 0;
@@ -206,7 +189,6 @@ static ssize_t db_dev_read(struct file *filep, char *buffer, size_t len, loff_t 
 
 static int db_dev_release(struct inode *inodep, struct file *filep)
 {
-  // number_opens--;
   db_filter_list_clear();
   db_packet_info_clear();
   db_hook_dev.opened = false;
@@ -215,13 +197,6 @@ static int db_dev_release(struct inode *inodep, struct file *filep)
 #if (LINUX_KERNEL_VERSION < KERNEL_VERSION(2,6,35))
   static int db_dev_ioctl(struct inode *i, struct file *file, unsigned int cmd, unsigned long arg)
 #else
-//   /**
-//   * @brief ioctl function.
-//   * @param file struct file *
-//   * @param cmd unsigned int
-//   * @param arg unsigned long
-//   * @return The error code, 0 else.
-//   */
 static long db_dev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #endif
 {
@@ -253,7 +228,6 @@ static long db_dev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
                     /* add new FILTER */
                     memcpy(&new->filter, &filter, DB_FILTER_LENGTH);
                     memset(&new->list, 0, sizeof(struct list_head));
-                    /*INIT_LIST_HEAD(&new->list); */
                     db_hook_dev.db_filter_num++;
                     list_add_tail(&new->list, &db_hook_dev.db_filters);
                 }
@@ -361,7 +335,6 @@ static int __init db_hook_init(void)
     }
     /* device was initialized */
     printk(KERN_INFO "[DB] device class created correctly.\n");
-    // mutex_init(&nhm_mutex);
     db_hook_dev.db_filter_num = 0;
     INIT_LIST_HEAD(&db_hook_dev.db_filters);
 
